@@ -41,18 +41,35 @@ switch ($method) {
         $sql = "SELECT `hidden_word`,`current_word`,`in_word`,`attempts`   FROM games WHERE `phone` = '$phone' ";
         //$sql = "SELECT `hidden_word`,`current_word`,`in_word`   FROM games WHERE `phone` = '$phone' ORDER BY `timestamp` DESC";
         $result = $db->querySingle($sql, true);
-        $have_attempts=mb_strlen($result['hidden_word']);
-        echo $have_attempts;
+        $hidden_word = mb_strtolower($result['hidden_word']);
+        $current_word = mb_strtolower($result['current_word']);
+        $attempts=$result['attempts'];
+        $have_attempts=mb_strlen($hidden_word)-$attempts;
+
          
         if ($result['in_word']){
-            $in_word = $result['in_word']."— не на своём месте \n";
+            $in_word = $result['in_word']." — не на своём месте \n";
         }
         // set API response
         
-        $response = 
-        "Ваше слово: $result[current_word] \n".
-        "осталось попыток: $have_attempts \n"
-        .$in_word;
+        if ($result){
+        
+            if ($current_word != $hidden_word){
+                $response = 
+                "Ваше слово: $result[current_word] \n".
+                "Осталось попыток: $have_attempts \n"
+                .$in_word;
+            }
+            else{
+                $response = 
+                "Вы угадали! \n".
+                "Загаданное слово: $hidden_word \n".
+                "Еще оставалось попыток: $have_attempts \n";
+            }
+        }
+        else{
+            $response = "Начните новую игру";
+        }
 
         break;
  // POST method   
@@ -64,7 +81,7 @@ switch ($method) {
         $hidden_word = mb_strtolower($json['phones-words'][$phone]);
         if (!$hidden_word) {
             $numRows = $db->querySingle("SELECT  COUNT(*) as count FROM words");
-            echo "$numRows=".$numRows;
+        //    echo "$numRows=".$numRows;
             $hidden_word = mb_strtolower($db->querySingle("SELECT *  FROM words LIMIT 1 OFFSET ".(rand(0,  $numRows))));
             
         }
@@ -72,8 +89,7 @@ switch ($method) {
 
         $current_word = str_repeat("_", mb_strlen($hidden_word));
         $have_attempts=mb_strlen($hidden_word);
-        echo $current_word;
-        echo mb_strlen($hidden_word);
+
 
         // add new not processed command in DB
         $sql = " UPDATE  games  
@@ -89,10 +105,10 @@ switch ($method) {
 
         // set API response
         $response = 
-        "Новая игра
-         Ваше слово: $current_word \n".
-        "осталось попыток: $have_attempts \n"
-        .$in_word;
+        "Новая игра \n".
+        "Слово: $current_word \n".
+        "Букв: ".mb_strlen($current_word)." \n";
+        "Осталось попыток: $have_attempts \n";
         break;
 
     case "PUT":
@@ -100,49 +116,85 @@ switch ($method) {
         $sql = "SELECT `hidden_word`,`current_word`,`in_word`,`attempts`   FROM games WHERE `phone` = '$phone' ";
         //$sql = "SELECT `hidden_word`,`current_word`,`in_word`   FROM games WHERE `phone` = '$phone' ORDER BY `timestamp` DESC";
         $result = $db->querySingle($sql, true);
-  
+        $current_word = mb_strtolower($result['current_word']);
         $hidden_word = mb_strtolower($result['hidden_word']);
         $attempts=$result['attempts'];
-        $have_attempts=mb_strlen($hidden_word)-$attempts;
+        $have_attempts=mb_strlen($hidden_word)-($attempts+1);
 
-        if ($have_attempts === 0)
-        {
-            $response = 
-            "Ваше слово: $current_word \n".
-            "Загаданное слово: $hidden_word \n".
-            "Попытки закончились начните новую игру: $have_attempts \n";
-            
+        if (!$result)
+        {   
+            $response = "Начните новую игру";
         }
-        else {
-            if ($user_word == $hidden_word){
+        else{
+            if (  $have_attempts === 0)
+            {
                 $response = 
-                "Вы угадали!:\n".
+                "Ваше слово: $user_word \n".
                 "Загаданное слово: $hidden_word \n".
-                "Еще оставалось попыток: $have_attempts \n";
+                "Попытки закончились, начните новую игру \n";
+                
             }
-            else{
-                if (mb_strlen($hidden_word ) != mb_strlen($user_word )){
+            else {
+                if ($user_word == $hidden_word){
+                  
+                    if ($hidden_word!= $current_word) {
+                        $attempts+=1;
+                    }
+                    $have_attempts=mb_strlen($hidden_word)-($attempts);
+                                      
+                    $sql = " UPDATE  games  
+                    SET `hidden_word`='$hidden_word', `current_word`='$user_word',
+                    `in_word`='', `attempts`= $attempts  WHERE `phone` = $phone";   
+                    $result = $db->querySingle($sql);
+
                     $response = 
-                    "Длина вашего слова не совпаладает с загаданным!:\n".
-                    "Повторите попытку.\n";
+                    "Вы угадали!\n".
+                    "Загаданное слово: $hidden_word \n".
+                    "Еще оставалось попыток: $have_attempts \n";
+
                 }
                 else{
-                    $is_noun = $db->querySingle("SELECT  `word`  FROM words WHERE `word` = '$user_word' ");
-                    if (!$is_noun){
+                    if (mb_strlen($hidden_word ) != mb_strlen($user_word )){
                         $response = 
-                        "Введенное слово не является существительным в именительном падеже: \n".
-                        "Повторите попытку. \n";
+                        "Длина вашего слова не совпаладает с загаданным! \n".
+                        "Повторите попытку.\n";
+                        "Текущий прогресс: $current_word \n";
                     }
                     else{
-                        echo $hidden_word," ",$user_word," \n";
-                        check_correct_letters($hidden_word,$user_word );
+                        $is_noun = $db->querySingle("SELECT  `word`  FROM words WHERE `word` = '$user_word' ");
+                        if (!$is_noun){
+                            $response = 
+                            "Введенное слово не является существительным в именительном падеже: \n".
+                            "Повторите попытку. \n";
+                        }
+                        else{
+                          //  echo $hidden_word," ",$user_word," \n";
+                        $check_result= check_correct_letters($hidden_word,$user_word,$current_word );
+                        //var_dump($check_result);
+                        $attempts+=1;
+                        $sql = " UPDATE  games  
+                        SET `hidden_word`='$hidden_word', `current_word`='$check_result->current_word',
+                        `in_word`='$check_result->in_word', `attempts`= $attempts  WHERE `phone` = $phone";   
+                        $result = $db->querySingle($sql);
+                    //    echo $result;
+
+                        if ($check_result->in_word){
+                            $in_word = $check_result->in_word." — не на своём месте \n";
+                        }
+                            
+                        $response = 
+                        "Ваше слово: $check_result->current_word  \n".
+                        "осталось попыток:". ($have_attempts)." \n"
+                        .$in_word;
+                
+
                     }
                 }
             }
 
-        };
+        }
 
-
+    }
 
         break;
 
@@ -158,26 +210,31 @@ echo $response;
 
 
 
-function check_correct_letters($hidden_word,$user_word )
+function check_correct_letters($hidden_word,$user_word,$current_word )
 {
     
     
     $hidden_word_arr = preg_split('//u', $hidden_word, 0, PREG_SPLIT_NO_EMPTY);
     $user_word_arr = preg_split('//u', $user_word, 0, PREG_SPLIT_NO_EMPTY);
-    $current_word_arr= array_fill(0, count($hidden_word_arr), '_');
+    $current_word_arr =  preg_split('//u', $current_word, 0, PREG_SPLIT_NO_EMPTY);
     $in_word_arr = array();
 
     
     for ($i = 0; $i < count($user_word_arr); $i++){
        
-
+ 
         for ($j = 0; $j < count($hidden_word_arr); $j++){
             if ($hidden_word_arr[$j]==$user_word_arr[$i]){
                 if ($j==$i){
-                    $current_word_arr[$i]=$user_word_arr[$i];
+                    if ($current_word_arr[$j]=="_"){
+                        $current_word_arr[$i]=$user_word_arr[$i];
+                        echo $current_word_arr[$i];
+                    }
+
                 }
                 else{
                     array_push($in_word_arr, $user_word_arr[$i]);
+                    
                 }
             }
 
@@ -185,13 +242,13 @@ function check_correct_letters($hidden_word,$user_word )
         }
         
     }
-
+         $in_word_arr =  array_unique($in_word_arr, SORT_REGULAR);
          // Displays 3 and 10
-         print_r($current_word_arr);
-         print_r(array_unique($in_word_arr, SORT_REGULAR));
+    //     print_r($current_word_arr);
+    //     print_r($in_word_arr);
 
-    
+    return    (object) [
+        'current_word' => implode($current_word_arr),
+        'in_word' => implode(",",$in_word_arr),
+      ];
 }
-
-
-?>
