@@ -134,7 +134,7 @@ switch ($method) {
                         "Повторите попытку. \n";
                     }
                     else{
-                        echo $hidden_word,$user_word;
+                        echo $hidden_word," ",$user_word," \n";
                         check_correct_letters($hidden_word,$user_word );
                     }
                 }
@@ -180,7 +180,7 @@ function check_correct_letters($hidden_word,$user_word )
                     array_push($in_word_arr, $user_word_arr[$i]);
                 }
             }
-            $positions[] = $lastPos;
+
            // $lastPos = $lastPos + mb_strlen($user_word[$i]);
         }
         
@@ -188,7 +188,7 @@ function check_correct_letters($hidden_word,$user_word )
 
          // Displays 3 and 10
          print_r($current_word_arr);
-         print_r($in_word_arr);
+         print_r(array_unique($in_word_arr, SORT_REGULAR));
 
     
 }
