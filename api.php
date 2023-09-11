@@ -1,9 +1,7 @@
 <?php
 
-const PAGE_ENCODING     ='UTF-8';
+const PAGE_ENCODING  ='UTF-8';
 
-if(mb_internal_encoding(PAGE_ENCODING) != PAGE_ENCODING) 
-throw new SomeException('There is no support encoding: '.PAGE_ENCODING);
 
 
 // Heaers
@@ -17,11 +15,11 @@ $phone = $_REQUEST["phone"];
 $user_word = mb_strtolower($_REQUEST["word"]);
 
 
-//$dt = date('c', time()); // get currtent time and date
+$dt = date('c', time()); // get currtent time and date
 
 // write request in log
-$fw = fopen("log.txt", "a+");
-fwrite($fw, $phone." ".$command." ".$dt."\r\n");
+$fw = fopen("api_log.txt", "a+");
+fwrite($fw, $phone." ".$user_word." ".$method." ".$dt."\r\n");
 fclose($fw);
 
 //connect to DB
@@ -94,14 +92,14 @@ switch ($method) {
         // add new not processed command in DB
         $sql = " UPDATE  games  
         SET `hidden_word`='$hidden_word', `current_word`='$current_word',
-        `in_word`='', `attempts`=0 WHERE `phone` = $phone;
+        `in_word`='', `attempts`=0, `last_try_word` ='' WHERE `phone` = $phone;
         ";      
         $result = $db->querySingle($sql);
-        echo $result;
-        $sql = " INSERT INTO games (`phone`, `hidden_word`, `current_word`,`in_word`)  
-        VALUES('$phone','$hidden_word', '$current_word', '')";
+
+        $sql = " INSERT INTO games (`phone`, `hidden_word`, `current_word`,`in_word`, `last_try_word`)  
+        VALUES('$phone','$hidden_word', '$current_word', '', '')";
         $result = $db->querySingle($sql);
-        echo $result;
+
 
         // set API response
         $response = 
@@ -113,11 +111,13 @@ switch ($method) {
 
     case "PUT":
        
-        $sql = "SELECT `hidden_word`,`current_word`,`in_word`,`attempts`   FROM games WHERE `phone` = '$phone' ";
+        $sql = "SELECT `hidden_word`,`current_word`, `last_try_word`, `in_word`, `attempts` FROM games WHERE `phone` = '$phone' ";
         //$sql = "SELECT `hidden_word`,`current_word`,`in_word`   FROM games WHERE `phone` = '$phone' ORDER BY `timestamp` DESC";
         $result = $db->querySingle($sql, true);
         $current_word = mb_strtolower($result['current_word']);
         $hidden_word = mb_strtolower($result['hidden_word']);
+        $last_try_word = mb_strtolower($result['last_try_word']);
+
         $attempts=$result['attempts'];
         $have_attempts=mb_strlen($hidden_word)-($attempts+1);
 
@@ -153,7 +153,14 @@ switch ($method) {
                     "Еще оставалось попыток: $have_attempts \n";
 
                 }
-                else{
+                elseif ($user_word == $last_try_word) {
+                    $have_attempts+=1;
+                    $response = 
+                    "В прошлый раз вы уже водили\n".
+                    "слово: $last_try_word \n".
+                    "Еще осталось попыток: $have_attempts \n";
+                }
+                else{                    
                     if (mb_strlen($hidden_word ) != mb_strlen($user_word )){
                         $response = 
                         "Длина вашего слова не совпаладает с загаданным! \n".
@@ -174,10 +181,10 @@ switch ($method) {
                         $attempts+=1;
                         $sql = " UPDATE  games  
                         SET `hidden_word`='$hidden_word', `current_word`='$check_result->current_word',
-                        `in_word`='$check_result->in_word', `attempts`= $attempts  WHERE `phone` = $phone";   
+                        `in_word`='$check_result->in_word', `attempts`= $attempts, `last_try_word`= '$user_word'
+                         WHERE `phone` = $phone";   
                         $result = $db->querySingle($sql);
-                    //    echo $result;
-
+                     
                         if ($check_result->in_word){
                             $in_word = $check_result->in_word." — не на своём месте \n";
                         }
@@ -228,7 +235,6 @@ function check_correct_letters($hidden_word,$user_word,$current_word )
                 if ($j==$i){
                     if ($current_word_arr[$j]=="_"){
                         $current_word_arr[$i]=$user_word_arr[$i];
-                        echo $current_word_arr[$i];
                     }
 
                 }
