@@ -76,7 +76,7 @@ switch ($method) {
         // read config
         $file = "game-config.json";
         $json = json_decode(file_get_contents($file), true);
-        $hidden_word = mb_strtolower($json['phones-words'][$phone]);
+        $hidden_word = mb_strtolower($json['phones_words'][$phone]);
         if (!$hidden_word) {
             $numRows = $db->querySingle("SELECT  COUNT(*) as count FROM words");
         //    echo "$numRows=".$numRows;

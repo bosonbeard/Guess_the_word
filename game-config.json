@@ -1,9 +1,9 @@
 {
-    "phones-words": {
+    "phones_words": {
         "79111977992": "дом",
         "79111977999": "дерево"
     },
     "config": {
-        "some_key": "some_val"
+        "base_url": "some_val"
     }
 }
