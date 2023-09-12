@@ -4,6 +4,7 @@
         "79111977999": "дерево"
     },
     "config": {
-        "base_url": "some_val"
+        "base_url": "https://somedomain/api.php",
+        "sms_api_key":1213
     }
 }
