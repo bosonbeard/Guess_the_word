@@ -14,9 +14,12 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 // Get parameters from SMS
 $method = $_SERVER['REQUEST_METHOD'];
-$phone = $data["receiver"];
+$phone = $data["sender"];
+$receiver = $data["receiver"];
 $text = mb_strtolower($data["text"]);
+$direction =  mb_strtolower($data["direction"]);
 
+if ($direction =="DIRECTION_INCOMING") {
 
 
 // get paams from config
@@ -24,7 +27,7 @@ $file = "game-config.json";
 $json = json_decode(file_get_contents($file), true);
 $base_url= $json['config']['base_url'];
 $sms_api_key = $json['config']['sms_api_key'];
-
+$sms_api_url=$json['config']['sms_api_url'];
 
 
 $url="$base_url?phone=$phone"; 
@@ -66,6 +69,10 @@ if ($phone){
 
     
         $response = $result;
+        // TODO: ПРОДОЛЖИТЬ ОТСЮДА
+       $res= send_SMS($phone, $receiver, $response, $sms_api_key, $sms_api_url );
+       echo $res;
+
     }
     elseif (trim($text)  == "info" ){
         curl_setopt($curl, CURLOPT_URL, $url);
@@ -99,3 +106,31 @@ curl_close($curl);
 //return response
 //echo json_encode($data);
 echo $response;
+}
+else{
+    echo "error not incoming message";
+}
+
+function send_SMS($phone, $receiver, $text, $sms_api_key, $sms_api_url )
+{
+   
+    $data = array("destination" => $phone, "number" => $receiver, "text" => $text );
+    $data_json = json_encode($data);
+   
+   
+    $curl = curl_init();
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+         'Content-Type: application/json',
+         'Authorization: Bearer '.$sms_api_key
+     ));
+     curl_setopt($curl, CURLOPT_POST, 1);
+     curl_setopt($curl, CURLOPT_URL, $sms_api_url);
+     curl_setopt($curl, CURLOPT_POSTFIELDS, $data_json);
+
+     $result = curl_exec($curl);
+     curl_close($curl);
+     return $result;
+
+
+}
