@@ -4,7 +4,8 @@
         "79111977999": "дерево"
     },
     "config": {
-        "base_url": "https://somedomain/api.php",
-        "sms_api_key":1213
+        "base_url": "https://api.php",
+        "sms_api_key":"1213",
+        "sms_api_url":"https://api.exolve.ru/messaging/v1/SendSMS"
     }
 }
