@@ -1,11 +1,12 @@
 {
     "phones_words": {
-        "79111977992": "дом",
-        "79111977999": "дерево"
+        "79623954321": "дом",
+        "79112912345": "дерево"
     },
     "config": {
-        "base_url": "https://api.php",
-        "sms_api_key":"1213",
+        "base_url": "url for your server with this API",
+        "sms_api_key":"MTS API KEY TOKEN",
         "sms_api_url":"https://api.exolve.ru/messaging/v1/SendSMS"
+        
     }
 }
