@@ -76,26 +76,26 @@ if ($phone) {
             $file = "game-config.json";
             $json = json_decode(file_get_contents($file), true);
             $hidden_word = mb_strtolower($json['phones_words'][$phone]);
+  
             if (!$hidden_word) {
                 $numRows = $db->querySingle("SELECT  COUNT(*) as count FROM words");
                 //    echo "$numRows=".$numRows;
                 $hidden_word = mb_strtolower($db->querySingle("SELECT *  FROM words LIMIT 1 OFFSET " . (rand(0,  $numRows))));
             }
             // start new game
-
+            
             $current_word = str_repeat("_", mb_strlen($hidden_word));
             $have_attempts = mb_strlen($hidden_word);
 
 
             // add new not processed command in DB
-            $sql = " UPDATE  games  
-        SET `hidden_word`='$hidden_word', `current_word`='$current_word',
-        `in_word`='', `attempts`=0, `last_try_word` ='' WHERE `phone` = $phone;
-        ";
+            $sql = "UPDATE  games  
+               SET `hidden_word`='$hidden_word', `current_word`='$current_word',
+               `in_word`='', `attempts`=0, `last_try_word` ='' WHERE `phone` = $phone";
             $result = $db->querySingle($sql);
 
-            $sql = " INSERT INTO games (`phone`, `hidden_word`, `current_word`,`in_word`, `last_try_word`)  
-        VALUES('$phone','$hidden_word', '$current_word', '', '')";
+            $sql = "INSERT INTO games (`phone`, `hidden_word`, `current_word`,`in_word`, `last_try_word`)  
+                 VALUES('$phone','$hidden_word', '$current_word', '', '')";
             $result = $db->querySingle($sql);
 
 
@@ -170,9 +170,9 @@ if ($phone) {
                                 //var_dump($check_result);
                                 $attempts += 1;
                                 $sql = " UPDATE  games  
-                        SET `hidden_word`='$hidden_word', `current_word`='$check_result->current_word',
-                        `in_word`='$check_result->in_word', `attempts`= $attempts, `last_try_word`= '$user_word'
-                         WHERE `phone` = $phone";
+                                  SET `hidden_word`='$hidden_word', `current_word`='$check_result->current_word',
+                                 `in_word`='$check_result->in_word', `attempts`= $attempts, `last_try_word`= '$user_word'
+                                  WHERE `phone` = $phone";
                                 $result = $db->querySingle($sql);
 
                                 if ($check_result->in_word) {
