@@ -18,9 +18,11 @@ $phone = $data["sender"];
 $receiver = $data["receiver"];
 $text = trim(mb_strtolower($data["text"]));
 $direction =  strtolower($data["direction"]);
-
+$billing_status = strtolower($data["billing_status"]);
 // listen olly incoming messages
-if ($direction == strtolower("DIRECTION_INCOMING")) {
+
+// only incoming and billed SMS (prevent double send)
+if ($direction == strtolower("DIRECTION_INCOMING") and $billing_status == strtolower("BILLING_STATUS_BILLED") ) {
 
 
     // get params from game-config.json
