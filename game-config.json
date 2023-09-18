@@ -1,7 +1,7 @@
 {
     "phones_words": {
-        "79623954321": "дом",
-        "79112912345": "дерево"
+        "796239543XX": "дом",
+        "791129123XX": "дерево"
     },
     "config": {
         "base_url": "url for your server with this API",
