@@ -1,7 +1,6 @@
 
 <?php
 // Guess the word game API (c) BosonBeard 2023
-const PAGE_ENCODING  = 'UTF-8';
 
 // Headers
 header("Access-Control-Allow-Orgin: *");
